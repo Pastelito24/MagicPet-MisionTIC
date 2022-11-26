@@ -1,23 +1,55 @@
 import React from "react";
+import axios from 'axios';
 import { Container, Form, Button, Row, Col } from "react-bootstrap";
 import './login.css';
+import app from '../app.json';
+import { isNull } from 'util';
+import Cookies from "universal-cookie";
+import { calcularExtraccionSesion } from "../helper/helper";
+import Loading from '../loading/loading';
+
+const{APIHOST}=app;
+const cookies = new Cookies();
 
 export default class login extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      loading: false, 
       usuario: '',
       pass: '',
     };
   }
   iniciarSesion(){
-    alert(`usuario: ${this.state.usuario} - password: ${this.state.pass}`);
-  }
-
+    this.setState({ loading: true });  
+    axios.post(`${APIHOST}/usuarios/login`, {
+        usuario: this.state.usuario,
+        pass: this.state.pass,
+      }
+      )
+      .then((response) => {
+      if(isNull(response.data.token)) {
+        alert("Usuario y/o contraseña invalidos");
+      }else{
+        cookies.set('_s', response.data.token,  
+          {
+          path: '/',
+          expires: calcularExtraccionSesion(),
+        });
+        this.props.history.push(window.open('/mascotas'));
+        }
+        this.setState({ loading: false }); 
+      })
+      .catch((err) => {
+        console.log(err);
+        this.setState({ loading: false });  
+      }); 
+}
   render() {
     return (
       <Container id="login-container">
-        <Row>
+        <Loading show={this.state.loading} />
+        <Row> 
           <Col>
             <Row>
               <h2>Iniciar Sesión</h2>
@@ -27,8 +59,8 @@ export default class login extends React.Component {
                 sm="12"
                 xs="12"
                 md={{ span: 4, offset: 4 }}
-                Lg={{ span: 4, offset: 4 }}
-                xL={{ span: 4, offset: 4 }}
+                lg={{ span: 4, offset: 4 }}
+                xl={{ span: 4, offset: 4 }}
               >
                 <Form>
                   <Form.Group>
@@ -50,9 +82,7 @@ export default class login extends React.Component {
                     } 
                     />
                   </Form.Group>
-                  <Button
-                    variant="primary"
-                    type="submit"                   
+                  <Button                   
                     onClick={ () => {
                       this.iniciarSesion();
                     }}
